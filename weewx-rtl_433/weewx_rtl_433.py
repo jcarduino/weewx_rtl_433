@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#import sys
+import sys
 import subprocess
 import time
 import threading
@@ -33,7 +33,11 @@ class AsynchronousFileReader(threading.Thread):
 # End Class ===========================
 def printdebug(str):
     global debug
+    if len(str)==0:
+    	return
     if debug:
+        if sys.stdout.isatty():
+            print (str)
         syslog.syslog(str)
     return
 
@@ -51,10 +55,11 @@ def print_data():
         if data[x]<>"":
             vdata= str(x)+"="+data[x]+"\n"
             fo.write(vdata)
-            printdebug(vdata)
+            printdebug(vdata.rstrip())
             data[x]=""
     printdebug( "close file: " +datafile)
     fo.close()
+    
 # Get BMP180 data
 def get_bmp180():
     global data
@@ -68,6 +73,7 @@ def get_bmp180():
 def process_data(msg):
     global data
     global rain
+    msg=msg.rstrip()#first strip off cr/lf
     printdebug ("Process data: "+msg)
     sline=msg.split()
     #AlectoV1 Wind Sensor 43: Wind speed 0 units = 0.00 m/s: Wind gust 0 units = 0.00 m/s: Direction 90 degrees: Battery OK
@@ -122,8 +128,14 @@ def process_data(msg):
         printdebug ("rain sensor!!!")
         device=sline[5]
         device=device.rstrip(':')
-        #data["rain"]=sline[7]
-        printdebug ("Updated(should be): rain: "+ data['rain'])
+        if rain=="0.0": #initial setting. measurements compared to last measurement
+        	rain=sline[7]
+        	printdebug ("Updated: set inital counter to: "+rain+" mm")
+    
+        else:
+        	idata=float(sline[7])-float(rain)
+        	data["rain"]=str(idata)
+        	printdebug ("Updated: rain since last minute: "+ data['rain'])
     
 #====================================
 #End data handler
@@ -147,6 +159,11 @@ if __name__ == '__main__':
     exportdata=1
     sensor = BMP085.BMP085()
     command=["/usr/bin/rtl_433","-R16","-R08", "-R15"]
+    if sys.stdout.isatty():
+        print("Started on console. Sending info to terminal session")
+    else:
+        syslog.syslog("Started as daemon. No output send to stdout")
+    
     data={'Time':"",'outTemp':"", 'inTemp':"", 'outHumidity':"", 'rain':"", 'extraHumid1':"", 'extraTemp1':"", 'windDir':"", 'windGust':"", 'windSpeed':"", 'altimeter':"", 'barometer':"", 'pressure':"", 'extraHumid2':"", 'extraTemp2':""}
     process = subprocess.Popen(command, stdout=subprocess.PIPE, preexec_fn=os.setsid)
     # Launch the asynchronous readers of the process' stdout and stderr.
