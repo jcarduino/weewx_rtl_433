@@ -113,7 +113,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, signal_handler)
     rain="0.0"
     debug=1
-    command="/usr/bin/rtl_433"
+    command=["/usr/bin/rtl_433","-R16","-R08"]
     data={'outTemp':"", 'inTemp':"", 'outHumidity':"", 'rain':"", 'extraHumid1':"", 'extraTemp1':"", 'windDir':"", 'windGust':"", 'windSpeed':"", 'altimeter':"", 'barometer':"", 'pressure':"", 'extraHumid2':"", 'extraTemp2':""}
     process = subprocess.Popen(command, stdout=subprocess.PIPE, preexec_fn=os.setsid)
     # Launch the asynchronous readers of the process' stdout and stderr.
