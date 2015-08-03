@@ -9,6 +9,7 @@ import Queue
 import os.path
 import syslog
 import Adafruit_BMP.BMP085 as BMP085
+import getopt
 # Class begin ========================
 class AsynchronousFileReader(threading.Thread):
     #
@@ -155,15 +156,36 @@ if __name__ == '__main__':
     datafile="/var/tmp/datafile"#export file to write
     interval_write_datafile=60# write file each 60 secs
     rain="0.0"
+    frequency="433740000"
     debug=1
+    try:
+      opts, args = getopt.getopt(sys.argv[1:],"do:f:",["debug","ofile=","frequency="])
+    except getopt.GetoptError:
+      print 'Usage: -d or --debug, -o <outputfile> --ofile <outputfile> -f <frequency> --frequency <frequency>'
+      sys.exit(2)
+    for opt, arg in opts:
+        if opt in("-d","--debug"):
+            debug=1
+        elif opt in ("-o", "--ofile"):
+         datafile = arg
+        elif opt in ("-f", "--frequency"):
+         frequency = arg
+    
+    
+    
     printtime=time.time()
     exportdata=1
     sensor = BMP085.BMP085()
-    command=["/usr/bin/rtl_433","-R16","-R08", "-R15"]
+    command=["/usr/bin/rtl_433","-R16","-R08", "-R15", "-f"+frequency]
     if sys.stdout.isatty():
         print("Started on console. Sending info to terminal session")
     else:
         syslog.syslog("Started as daemon. No output send to stdout")
+    syslog.syslog("Frequency: "+frequency)
+    if debug:
+    	syslog.syslog("Debug: ON")
+    else:
+    	syslog.syslog("Debug: off")
     
     data={'Time':"",'outTemp':"", 'inTemp':"", 'outHumidity':"", 'rain':"", 'extraHumid1':"", 'extraTemp1':"", 'windDir':"", 'windGust':"", 'windSpeed':"", 'altimeter':"", 'barometer':"", 'pressure':"", 'extraHumid2':"", 'extraTemp2':""}
     process = subprocess.Popen(command, stdout=subprocess.PIPE, preexec_fn=os.setsid)
