@@ -42,8 +42,8 @@ def printdebug(str):
  
 def process_data(msg):
     global data
-    print msg
-    printdebug ("Process data: "+msg)
+    global rain
+    print ("Process data: "+msg)
     sline=msg.split()
     #AlectoV1 Wind Sensor 43: Wind speed 0 units = 0.00 m/s: Wind gust 0 units = 0.00 m/s: Direction 90 degrees: Battery OK
     if 'AlectoV1 Wind Sensor' in msg:
@@ -52,7 +52,7 @@ def process_data(msg):
         data['windDir']=sline[21]
         data['windSpeed']=sline[11]
         data['windGust']=sline[18]
- 
+        print "Updated: wind data: "+ data['windDir']+" "+  data['windSpeed']+" "+  data['windGust'] 
     if 'LaCrosse TX Sensor' in msg:
                 #2015-07-02 06:37:34 LaCrosse TX Sensor 3c: Temperature 20.0 C / 68.0 F
                 #2015-07-02 12:22:37 LaCrosse TX Sensor 3f: Humidity 58.0%
@@ -60,43 +60,44 @@ def process_data(msg):
                 device=device.rstrip(':')
                 d_data=sline[7]
                 d_data=d_data.rstrip('%')
-		#sensordata = (device,sline[6],d_data,'')
-                print device
-		print d_data
+                print ("LaCrosse TX Sensor")
+                #sensordata = (device,sline[6],d_data,'')
                 if device=="3f" and sline[6]=='Temperature':
-                    print "detect 3f temp" 
-		    data['outTemp']==d_data
+                    data['outTemp']==d_data
+                    print "Updated: 3f outTemp: "+ data['outTemp']
                 if device=="7e" and sline[6]=='Temperature':
                     data['inTemp']=d_data
-                    print "detect 7e temp"
+                    print "Updated: 7e inTemp: "+ data['inTemp']
                 if device=="3f" and sline[6]=='Humidity':
                     data['out_Humidity']=d_data
-                    print "detect 3f hum"
+                    print "Updated: 3f outHum: "+ data['outHumidity']
                     
 #3f buiten 7e binnen hum temp
     if 'AlectoV1 Sensor' in msg:
         #2015-07-02 12:56:37 AlectoV1 Sensor 43 Channel 1: Temperature 29.3 C: Humidity 49 : Battery OK    
         device=sline[4]
         device=device.rstrip(':')
+        print("AlectoV1 Sensor")
         if device== "43" and sline[7]=='Temperature':#zolder
             data["extraTemp1"]=sline[8]
+            print "Updated: 43 extraTemp1: "+ data['extraTemp1']
         if device== "43" and sline[10]=='Humidity':#zolder
             data["extraHumid1"]=sline[11]
-            
+            print "Updated: 43 extraHumid1: "+ data['extraHumid1']
         if device== "247" and sline[7]=='Temperature':#kelder
             data["extraTemp2"]=sline[8]
+            print "Updated: 247 extraTemp2: "+ data['extraTemp2']
         if device== "247" and sline[10]=='Humidity':#kelder
             data["extraHumid2"]=sline[11]
-              
-        if 'AlectoV1 Rain Sensor' in msg:
+            print "Updated: 247 extraHumid2: "+ data['extraHumid2'] 
+    if 'AlectoV1 Rain Sensor' in msg:
         #2015-07-02 12:23:42 AlectoV1 Rain Sensor 133: Rain 0.00 mm/m2: Battery OK
-            print "rain sensor!!!"
-            device=sline[5]
-            device=device.rstrip(':')
-            data["rain"]=sline[7]
-	    print rain
-            print sline[7]
-    print data
+        print "rain sensor!!!"
+        device=sline[5]
+        device=device.rstrip(':')
+        data["rain"]=sline[7]
+        print "Updated: rain: "+ data['rain']
+    #print data
 #====================================
 #End data handler
 #
@@ -110,7 +111,8 @@ if __name__ == '__main__':
     #capture control-c and kill signal
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    debug=0
+    rain="0.0"
+    debug=1
     command="/usr/bin/rtl_433"
     data={'outTemp':"", 'inTemp':"", 'outHumidity':"", 'rain':"", 'extraHumid1':"", 'extraTemp1':"", 'windDir':"", 'windGust':"", 'windSpeed':"", 'altimeter':"", 'barometer':"", 'pressure':"", 'extraHumid2':"", 'extraTemp2':""}
     process = subprocess.Popen(command, stdout=subprocess.PIPE, preexec_fn=os.setsid)
