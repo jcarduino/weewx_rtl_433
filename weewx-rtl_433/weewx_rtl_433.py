@@ -7,7 +7,7 @@ import signal
 import Queue
 import os.path
 import syslog
-
+import Adafruit_BMP.BMP085 as BMP085
 # Class begin ========================
 class AsynchronousFileReader(threading.Thread):
     #
@@ -36,6 +36,20 @@ def printdebug(str):
     if debug:
         syslog.syslog(str)
     return
+
+# Print data[]
+def print_data():
+    global data
+    print "printing data"
+    for x in data:
+        print (x),"=",  data[x]
+# Get BMP180 data
+def get_bmp180():
+    global data
+    data['Time'] = int(time.time())
+    data['barometer']= str(float(sensor.read_pressure()/100))
+    data['altimeter']= str(int( sensor.read_altitude()))
+    data['pressure'] = str(float(sensor.read_sealevel_pressure()/100))
 #       
 # PROCESS DATA ========================
 #
@@ -47,6 +61,7 @@ def process_data(msg):
     sline=msg.split()
     #AlectoV1 Wind Sensor 43: Wind speed 0 units = 0.00 m/s: Wind gust 0 units = 0.00 m/s: Direction 90 degrees: Battery OK
     if 'AlectoV1 Wind Sensor' in msg:
+    	
         device=sline[5]
         device=device.rstrip(':')
         data['windDir']=sline[21]
@@ -72,7 +87,7 @@ def process_data(msg):
                     data['out_Humidity']=d_data
                     print "Updated: 3f outHum: "+ data['outHumidity']
                     
-#3f buiten 7e binnen hum temp
+	#3f buiten 7e binnen hum temp
     if 'AlectoV1 Sensor' in msg:
         #2015-07-02 12:56:37 AlectoV1 Sensor 43 Channel 1: Temperature 29.3 C: Humidity 49 : Battery OK    
         device=sline[4]
@@ -97,7 +112,7 @@ def process_data(msg):
         device=device.rstrip(':')
         data["rain"]=sline[7]
         print "Updated: rain: "+ data['rain']
-    #print data
+    
 #====================================
 #End data handler
 #
@@ -107,20 +122,31 @@ def signal_handler(signal, frame):
         # sys.exit(0)
         #Continue exit process main loop
 
+def threaded_print_function():
+        global exportdata
+        print "starting pt"
+        while 1==1:
+            print "sleep for 5 secs"
+            time.sleep(5)
+            print "Printing....running"
+            exportdata=1
+#============================================
 if __name__ == '__main__':
     #capture control-c and kill signal
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     rain="0.0"
     debug=1
-    command=["/usr/bin/rtl_433","-R16","-R08"]
-    data={'outTemp':"", 'inTemp':"", 'outHumidity':"", 'rain':"", 'extraHumid1':"", 'extraTemp1':"", 'windDir':"", 'windGust':"", 'windSpeed':"", 'altimeter':"", 'barometer':"", 'pressure':"", 'extraHumid2':"", 'extraTemp2':""}
+    printtime=time.time()
+    exportdata=1
+    sensor = BMP085.BMP085()
+    command=["/usr/bin/rtl_433","-R16","-R08", "-R15"]
+    data={'Time':"",'outTemp':"", 'inTemp':"", 'outHumidity':"", 'rain':"", 'extraHumid1':"", 'extraTemp1':"", 'windDir':"", 'windGust':"", 'windSpeed':"", 'altimeter':"", 'barometer':"", 'pressure':"", 'extraHumid2':"", 'extraTemp2':""}
     process = subprocess.Popen(command, stdout=subprocess.PIPE, preexec_fn=os.setsid)
     # Launch the asynchronous readers of the process' stdout and stderr.
     stdout_queue = Queue.Queue()
     stdout_reader = AsynchronousFileReader(process.stdout, stdout_queue)
     stdout_reader.start()
-    
     #main queue loop
     # Check the queues if we received some output (until there is nothing more to get).
     while not stdout_reader.eof():
@@ -129,11 +155,19 @@ if __name__ == '__main__':
             process_data(stdout_queue.get())    
         # Sleep a bit before asking the readers again.
         time.sleep(.1)
+        if (time.time()-printtime)>10:
+            print(int(time.time()-printtime))
+            get_bmp180()
+            print_data()
+            printtime=time.time()
     # end main loop
     
     syslog.syslog("Normal exitchain")
     # Let's be tidy and join the threads we've started.
     stdout_reader.join()
+    
+
+    
     # Close subprocess' file descriptors.
     process.stdout.close()
     syslog.syslog("Exit program")
