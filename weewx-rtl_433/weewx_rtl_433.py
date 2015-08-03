@@ -8,6 +8,7 @@ import Queue
 import os.path
 import syslog
 import Adafruit_BMP.BMP085 as BMP085
+
 # Class begin ========================
 class AsynchronousFileReader(threading.Thread):
     #
