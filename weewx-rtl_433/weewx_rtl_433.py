@@ -33,6 +33,7 @@ class AsynchronousFileReader(threading.Thread):
         #Check whether there is no more content to expect.'''
         return not self.is_alive() and self._queue.empty()
 # End Class ===========================
+
 def printdebug(str):
     global debug
     if len(str)==0:
@@ -45,8 +46,17 @@ def printdebug(str):
 
 # Print data[]
 def print_data():
+    global rain
+    global rainnew
     global data
     global datafile
+    #set rainfall since begin interval
+    if rainnew<>"":
+    	data["rain"]=str(float(rain)-float(rain))
+    	printdebug( "updated: rainfall "+rainnew+" - "+rain+" = "+ data['rain'])
+    	rain=rainnew
+    	rainnew=""    	
+    
     printdebug( "Open exportfile: " +datafile)
     fo = open(datafile, "wb+")    
     fo.write("Date="+ str(int(time.time()))+"\n")
@@ -75,8 +85,9 @@ def get_bmp180():
 def process_data(msg):
     global data
     global rain
+    global rainnew
     msg=msg.rstrip()#first strip off cr/lf
-    printdebug ("Process data: "+msg)
+    printdebug ("Process: "+msg)
     sline=msg.split()
     #AlectoV1 Wind Sensor 43: Wind speed 0 units = 0.00 m/s: Wind gust 0 units = 0.00 m/s: Direction 90 degrees: Battery OK
     if 'AlectoV1 Wind Sensor' in msg:
@@ -130,14 +141,13 @@ def process_data(msg):
         printdebug ("rain sensor!!!")
         device=sline[5]
         device=device.rstrip(':')
-        if rain=="0.0": #initial setting. measurements compared to last measurement
+        if rain=="": #initial setting. measurements compared to last measurement
         	rain=sline[7]
         	printdebug ("Updated: set inital counter to: "+rain+" mm")
     
         else:
-        	idata=float(sline[7])-float(rain)
-        	data["rain"]=str(idata)
-        	printdebug ("Updated: rain since last minute: "+ data['rain'])
+        	rainnew=sline[7]
+        	printdebug ("Updated: rainvalue: "+ rainnew)
     
 #====================================
 #End data handler
@@ -155,9 +165,11 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, signal_handler)
     datafile="/var/tmp/datafile"#export file to write
     interval_write_datafile=60# write file each 60 secs
-    rain="0.0"
+    rain=""#holds last evaluated level
+    rainnew=""#holds last transmitted level
     frequency="433740000"
-    debug=1
+    debug=0
+    #get options
     try:
       opts, args = getopt.getopt(sys.argv[1:],"do:f:",["debug","ofile=","frequency="])
     except getopt.GetoptError:
@@ -171,8 +183,7 @@ if __name__ == '__main__':
         elif opt in ("-f", "--frequency"):
          frequency = arg
     
-    
-    
+    #
     printtime=time.time()
     exportdata=1
     sensor = BMP085.BMP085()
@@ -207,13 +218,10 @@ if __name__ == '__main__':
             print_data()
             printtime=time.time()
     # end main loop
-    
+    #
     syslog.syslog("Normal exitchain")
     # Let's be tidy and join the threads we've started.
     stdout_reader.join()
-    
-
-    
     # Close subprocess' file descriptors.
     process.stdout.close()
     syslog.syslog("Exit program")
