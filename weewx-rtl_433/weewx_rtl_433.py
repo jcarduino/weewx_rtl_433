@@ -62,7 +62,7 @@ def print_data():
     #set rainfall since begin interval
     if rainnew<>"":
     	data["rain"]=str(float(rain)-float(rain))
-    	printdebug( "updated: rainfall "+rainnew+" - "+rain+" = "+ data['rain'])
+    	printdebug( "Updated: rain "+rainnew+" - "+rain+" = "+ data['rain'])
     	rain=rainnew
     	rainnew=""    	
     #now get latest BMP180 data
@@ -88,7 +88,7 @@ def print_data():
             fo.write(vdata)
             printdebug(vdata.rstrip())
             data[x]=""
-    printdebug( "close file: " +datafile)
+    printdebug( "Close file: " +datafile)
     fo.close()
 #       
 # PROCESS DATA ========================
@@ -109,7 +109,7 @@ def process_data(msg):
         data['windDir']=sline[21]
         data['windSpeed']=sline[11]
         data['windGust']=sline[18]
-        printdebug( "Updated: wind data: "+ data['windDir']+" "+  data['windSpeed']+" "+  data['windGust'] )
+        printdebug( "Updated: windDir windSpeed windGust: "+ data['windDir']+" "+  data['windSpeed']+" "+  data['windGust'] )
     if 'LaCrosse TX Sensor' in msg:
                 #2015-07-02 06:37:34 LaCrosse TX Sensor 3c: Temperature 20.0 C / 68.0 F
                 #2015-07-02 12:22:37 LaCrosse TX Sensor 3f: Humidity 58.0%
@@ -117,7 +117,7 @@ def process_data(msg):
                 device=device.rstrip(':')
                 d_data=sline[7]
                 d_data=d_data.rstrip('%')
-                printdebug ("LaCrosse TX Sensor "+d_data)
+                printdebug ("Detected LaCrosse TX Sensor "+d_data)
                 #sensordata = (device,sline[6],d_data,'')
                 if device=="3f" and sline[6]=='Temperature':
                     data['outTemp']=d_data
@@ -133,32 +133,32 @@ def process_data(msg):
         #2015-07-02 12:56:37 AlectoV1 Sensor 43 Channel 1: Temperature 29.3 C: Humidity 49 : Battery OK    
         device=sline[4]
         device=device.rstrip(':')
-        printdebug("AlectoV1 Sensor")
+        printdebug("Detected AlectoV1 Sensor")
         if device== "43" and sline[7]=='Temperature':#zolder
             data["extraTemp1"]=sline[8]
-            printdebug( "Updated: 43 extraTemp1: "+ data['extraTemp1'])
+            printdebug( "Updated: extraTemp1: "+ data['extraTemp1'])
         if device== "43" and sline[10]=='Humidity':#zolder
             data["extraHumid1"]=sline[11]
-            printdebug( "Updated: 43 extraHumid1: "+ data['extraHumid1'])
+            printdebug( "Updated: extraHumid1: "+ data['extraHumid1'])
         if device== "247" and sline[7]=='Temperature':#kelder
             data["extraTemp2"]=sline[8]
-            printdebug( "Updated: 247 extraTemp2: "+ data['extraTemp2'])
+            printdebug( "Updated: extraTemp2: "+ data['extraTemp2'])
         if device== "247" and sline[10]=='Humidity':#kelder
             data["extraHumid2"]=sline[11]
-            printdebug( "Updated: 247 extraHumid2: "+ data['extraHumid2'] )
+            printdebug( "Updated: extraHumid2: "+ data['extraHumid2'] )
     if 'AlectoV1 Rain Sensor' in msg:
         #2015-07-02 12:23:42 AlectoV1 Rain Sensor 133: Rain 0.00 mm/m2: Battery OK
         # mm per unit (update interval)needs to be calculated 
-        printdebug ("Rain sensor")
+        printdebug ("Detected Rain sensor")
         device=sline[5]
         device=device.rstrip(':')
         if rain=="": #initial setting. measurements compared to last measurement
         	rain=sline[7]
-        	printdebug ("Updated: set inital counter to: "+rain+" mm")
+        	printdebug ("Updated: Set inital counter to: "+rain+" mm")
     
         else:
         	rainnew=sline[7]
-        	printdebug ("Updated: rainvalue: "+ rainnew)
+        	printdebug ("Updated: Rainvalue: "+ rainnew)
     
 #====================================
 #End data handler
@@ -174,8 +174,8 @@ if __name__ == '__main__':
     #capture control-c and kill signal
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    datafile="/var/tmp/datafile"#export file to write
-    interval_write_datafile=60# write file each 60 secs
+    datafile="/home/weewx/weewx/datafile"#export file to write
+    interval_write_datafile=120# write file each 60 secs
     rain=""#holds last evaluated level
     rainnew=""#holds last transmitted level
     frequency="433740000"
@@ -209,7 +209,7 @@ if __name__ == '__main__':
     else:
     	syslog.syslog("Debug: off")
     
-    data={'Time':"",'outTemp':"", 'inTemp':"", 'outHumidity':"", 'rain':"", 'extraHumid1':"", 'extraTemp1':"", 'windDir':"", 'windGust':"", 'windSpeed':"", 'altimeter':"", 'barometer':"", 'pressure':"", 'extraHumid2':"", 'extraTemp2':""}
+    data={'outTemp':"", 'inTemp':"", 'outHumidity':"", 'rain':"", 'extraHumid1':"", 'extraTemp1':"", 'windDir':"", 'windGust':"", 'windSpeed':"", 'altimeter':"", 'barometer':"", 'pressure':"", 'extraHumid2':"", 'extraTemp2':""}
     process = subprocess.Popen(command, stdout=subprocess.PIPE, preexec_fn=os.setsid)
     # Launch the asynchronous readers of the process' stdout and stderr.
     stdout_queue = Queue.Queue()
