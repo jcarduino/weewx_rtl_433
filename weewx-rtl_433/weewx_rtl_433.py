@@ -58,6 +58,7 @@ def print_data():
     global rainnew
     global data
     global datafile
+    missed=""
     #set rainfall since begin interval
     if rainnew<>"":
     	data["rain"]=str(float(rain)-float(rain))
@@ -66,6 +67,15 @@ def print_data():
     	rainnew=""    	
     #now get latest BMP180 data
     get_bmp180()
+    #if debug also show what data has no readings
+    if debug==1:#if debugging also write out what data is not received
+        for x in data:
+            if data[x]=="":
+                missed= missed+" "+str(x)
+        if missed=="":
+            missed=" None"
+        printdebug("Missed sensors:"+missed)
+    
     printdebug( "Open exportfile: " +datafile)
     fo = open(datafile, "wb+")    
     fo.write("Date="+ str(int(time.time()))+"\n")
