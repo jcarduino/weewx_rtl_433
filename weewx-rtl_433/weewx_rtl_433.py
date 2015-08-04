@@ -33,7 +33,8 @@ class AsynchronousFileReader(threading.Thread):
         #Check whether there is no more content to expect.'''
         return not self.is_alive() and self._queue.empty()
 # End Class ===========================
-
+#
+# Print routine when debugflag is set, to log and/or to screen when tty is used
 def printdebug(str):
     global debug
     if len(str)==0:
@@ -43,6 +44,13 @@ def printdebug(str):
             print (str)
         syslog.syslog(str)
     return
+    
+# Get BMP180 data
+def get_bmp180():
+    global data
+    data['barometer']= str(float(sensor.read_pressure()/100))
+    data['altimeter']= str(int( sensor.read_altitude()))
+    data['pressure'] = str(float(sensor.read_sealevel_pressure()/100))
 
 # Print data[]
 def print_data():
@@ -56,7 +64,8 @@ def print_data():
     	printdebug( "updated: rainfall "+rainnew+" - "+rain+" = "+ data['rain'])
     	rain=rainnew
     	rainnew=""    	
-    
+    #now get latest BMP180 data
+    get_bmp180()
     printdebug( "Open exportfile: " +datafile)
     fo = open(datafile, "wb+")    
     fo.write("Date="+ str(int(time.time()))+"\n")
@@ -71,13 +80,6 @@ def print_data():
             data[x]=""
     printdebug( "close file: " +datafile)
     fo.close()
-    
-# Get BMP180 data
-def get_bmp180():
-    global data
-    data['barometer']= str(float(sensor.read_pressure()/100))
-    data['altimeter']= str(int( sensor.read_altitude()))
-    data['pressure'] = str(float(sensor.read_sealevel_pressure()/100))
 #       
 # PROCESS DATA ========================
 #
@@ -105,18 +107,17 @@ def process_data(msg):
                 device=device.rstrip(':')
                 d_data=sline[7]
                 d_data=d_data.rstrip('%')
-                printdebug ("LaCrosse TX Sensor")
+                printdebug ("LaCrosse TX Sensor "+d_data)
                 #sensordata = (device,sline[6],d_data,'')
                 if device=="3f" and sline[6]=='Temperature':
-                    data['outTemp']==d_data
-                    printdebug( "Updated: 3f outTemp: "+ data['outTemp'])
+                    data['outTemp']=d_data
+                    printdebug( "Updated: outTemp: "+ data['outTemp'])
                 if device=="7e" and sline[6]=='Temperature':
                     data['inTemp']=d_data
-                    printdebug( "Updated: 7e inTemp: "+ data['inTemp'])
+                    printdebug( "Updated: inTemp: "+ data['inTemp'])
                 if device=="3f" and sline[6]=='Humidity':
-                    data['out_Humidity']=d_data
-                    printdebug( "Updated: 3f outHum: "+ data['outHumidity'])
-                    
+                    data['outHumidity']=d_data
+                    printdebug( "Updated: outHum: "+ data['outHumidity'])
 	#3f buiten 7e binnen hum temp
     if 'AlectoV1 Sensor' in msg:
         #2015-07-02 12:56:37 AlectoV1 Sensor 43 Channel 1: Temperature 29.3 C: Humidity 49 : Battery OK    
@@ -137,8 +138,8 @@ def process_data(msg):
             printdebug( "Updated: 247 extraHumid2: "+ data['extraHumid2'] )
     if 'AlectoV1 Rain Sensor' in msg:
         #2015-07-02 12:23:42 AlectoV1 Rain Sensor 133: Rain 0.00 mm/m2: Battery OK
-        #NEEDS WORK!!! mm per unit (update interval)needs to be calculated 
-        printdebug ("rain sensor!!!")
+        # mm per unit (update interval)needs to be calculated 
+        printdebug ("Rain sensor")
         device=sline[5]
         device=device.rstrip(':')
         if rain=="": #initial setting. measurements compared to last measurement
@@ -214,7 +215,6 @@ if __name__ == '__main__':
         time.sleep(.1)
         if (time.time()-printtime)>interval_write_datafile:
             #print(int(time.time()-printtime))
-            get_bmp180()
             print_data()
             printtime=time.time()
     # end main loop
