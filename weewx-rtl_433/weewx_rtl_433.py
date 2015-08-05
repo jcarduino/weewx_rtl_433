@@ -178,7 +178,7 @@ if __name__ == '__main__':
     interval_write_datafile=120# write file each 60 secs
     rain=""#holds last evaluated level
     rainnew=""#holds last transmitted level
-    frequency="433740000"
+    frequency="433920000"
     debug=0
     #get options
     try:
@@ -198,7 +198,7 @@ if __name__ == '__main__':
     printtime=time.time()
     exportdata=1
     sensor = BMP085.BMP085()
-    command=["/usr/bin/rtl_433","-R16","-R08", "-R15", "-f"+frequency]
+    command=["/usr/bin/rtl_433","-R16","-R08", "-f"+frequency]
     if sys.stdout.isatty():
         print("Started on console. Sending info to terminal session")
     else:
